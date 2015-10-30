@@ -68,11 +68,16 @@ class IRCHandler(object):
             
     def senderOf(self, msg):    #if privmsg, get the sender info
         if self.isPrivMsg(msg):
-            self.bot.debug("\t\t\tThis was a PRIVMSG FROM %s" %  msg.split()[0], 8)
+            self.bot.debug("\t\t\tThis was a PRIVMSG FROM %s" %  msg.split()[0], 5)
             return msg.split()[0] #like :thebored!~thebored@localhost.lake
         else:
             return None
-            
+    
+    def nick_of(self, nick_host):
+        """Take the host string, return the nick"""
+        ##like :thebored!~thebored@localhost.lake -> thebored
+        return nick_host.split('!~')[0].lstrip(':')
+        
     def isCommandFromGod(self, msg):
         """Takes a msg, returns True if it is from self.bot.master"""
         #if the first word has 1 occurance of <nick>!~
@@ -112,7 +117,7 @@ class QuoteHandler(IRCHandler):
                 cur = self.bot.db.cursor()
                 cur.execute("SELECT * FROM Quotes ORDER BY RANDOM() LIMIT 1")
                 row = cur.fetchone() #fetch the row 
-                self.bot.debug('Fetched Random Quote: ' + str(row), 5)
+                self.bot.debug('Fetched Random Quote: ' + str(row), 3)
                 self.replyto(msg, ('"%s"' % row[1]))    #send the quote
 
     def addQuote(self, quote, added_by):
@@ -130,12 +135,14 @@ class QuitHandler(IRCHandler):
                 self.replyto(msg, "Screw you guys, I'm going home.")
                 self.bot.stop()
 
-class RejoinHandler(IRCHandler):
-    """rejoin: Make the bot rejoin its self.joinup list of chans with !rejoin"""
+class JoinHandler(IRCHandler):
+    """join: Make the bot rejoin its self.joinup list of chans with !rejoin"""
     def receivemsg(self, msg):
         if self.isCommandFromGod(msg):
             if msg.find('!rejoin') != -1:
                 self.bot.joinChans(self.bot.joinup)
+            if msg.find('!join') != -1:
+                self.bot.joinChans([msg.split()[3]])
 
 class LogHandler(IRCHandler):
     """logger: log all msgs to an sqllite file db"""
@@ -150,7 +157,7 @@ class LogHandler(IRCHandler):
             chan = self.chanFrom(msg)
             cur.execute("CREATE TABLE IF NOT EXISTS IRCLog (Id INTEGER PRIMARY KEY, Msg TEXT, Chan TEXT)")
             cur.execute("INSERT INTO IRCLog (Msg, Chan) VALUES (?, ?)", (msg, chan))
-            self.bot.debug("Added a msg to the DB Log!: '%s added from %s'" % (msg, chan), 7)
+            self.bot.debug("Added a msg to the DB Log!: '%s added from %s'" % (msg, chan), 2)
 
 from datetime import timedelta
 
@@ -160,7 +167,7 @@ class SysHandler(IRCHandler):
         #stole the uptime code from
         #http://planzero.org/blog/2012/01/26/system_uptime_in_python,_a_better_way
         if msg.find('!sys uptime') != -1:    #reply with linux system uptime  
-            self.bot.debug('\tReceived !sys uptime command', 5)
+            self.bot.debug('\tReceived !sys uptime command', 3)
             try: #Try to open
                 uptime = open('/proc/uptime', 'r')
             except IOError:  #Not on linux, or something. fucked up
@@ -171,7 +178,7 @@ class SysHandler(IRCHandler):
                     uptime_string = str(timedelta(seconds = uptime_seconds))
                     self.replyto(msg, uptime_string) #reply uptime to sender
         if msg.find('!sys os') != -1:    #Reply with os version
-            self.bot.debug('\tReceived !sys os command', 5)
+            self.bot.debug('\tReceived !sys os command', 3)
             try:
                 os_version = open('/proc/version', 'r')
             except IOError:
@@ -181,7 +188,7 @@ class SysHandler(IRCHandler):
                     os_info = str(f.readline())
                     self.replyto(msg, os_info)
         if msg.find('!sys meminfo') != -1:   #Reply with meminfo
-            self.bot.debug('\tReceived !sys meminfo command', 5)
+            self.bot.debug('\tReceived !sys meminfo command', 3)
             try:
                 meminfo = open('/proc/meminfo', 'r')
             except IOError:
@@ -193,7 +200,7 @@ class SysHandler(IRCHandler):
                         if line.find('Mem') != -1:
                             self.replyto(msg, line)
         if msg.find('!sys cpuinfo') != -1:   #Reply with cpuinfo
-            self.bot.debug('\tReceived !sys cpuinfo command', 5)
+            self.bot.debug('\tReceived !sys cpuinfo command', 3)
             try:
                 cpuinfo = open('/proc/cpuinfo', 'r')
             except IOError:
