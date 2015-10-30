@@ -54,7 +54,7 @@ class IRCHandler(object):
         pms it needs to be parsed from msg[0]"""
         if self.is_priv_msg(msg):
             if self.is_private(msg): #if private/pm, send directly to sender
-                return 'thebored' #FUCKIN CHANGE TIS BIG EROOR
+                return self.nick_of(self.sender_of(msg))
             else:   #if its in a chan, use the place the messag was sent
                 return msg.split()[2]
         else:
@@ -80,23 +80,23 @@ class IRCHandler(object):
         
     def is_authenticated(self, msg):
         """Takes a msg, returns True if it is from self.bot.master"""
-        #if the first word has 1 occurance of <nick>!~
-        #like :thebored!~thebored@localhost.lake(some reason :<nick>!~ is broken)
         if self.is_priv_msg(msg):
-            if (self.sender_of(msg).find(self.bot.master + '!~') != -1):
-                #self.debug('Received message from ' + self.bot.master + ' the god.')
+            if (self.nick_of(self.sender_of(msg)).find(self.bot.master) != -1):
+                self.bot.debug('Received message from ' + self.bot.master + ' the god.', 3)
                 return True
             else:
+                self.bot.debug('Received message from ' + self.nick_of(self.sender_of(msg)) + ' not the god' + self.bot.master, 3)
                 return False
         else:
-           return False
+            self.bot.debug('Received message but its not a privmsg', 3) 
+            return False
 
 
 class PONGHandler(IRCHandler):
     """PONG: PONG back the servers PING to stay connected"""
     def receive_msg(self, msg):
         if msg.split()[0].find('PING') != -1:   #if first word is PING
-            self.bot.textSend ('PONG ' + msg.split() [1])   #PONG back
+            self.bot.text_send ('PONG ' + msg.split() [1])   #PONG back
 
 class OneLinerHandler(IRCHandler):
     """OneLiner: A collection of one line responses to prompts/commands"""
@@ -111,7 +111,6 @@ class OneLinerHandler(IRCHandler):
 
 class QuoteHandler(IRCHandler):
     """quote: Send random line from a Quotes table in the  bot's .db"""
-
     def receive_msg(self, msg):
         if msg.find('!quote') != -1:
             with self.bot.db:    

@@ -1,17 +1,17 @@
 This is the readme. Readme. or dont.
 BoredBot is a botnet project. Run anywhere from a single server/nick bot on a
     single #chan, to 100 bots, each on 100 channels. Though it has blocking
-    code, so it's best to use it as an easily understand bot framework for a
+    code, so it's best to use it as an easily understood bot framework for a
     hobby IRC Bot or to learn how to make your own.
 
 Here is the basic structure of the code.
 ircbot.py                   #The BotNet, and BoredBot classes. Plus "main".
     imports IRCHandlers     #IRCHandler, and all derived classes. New Handlers
-                            #   get put in this file, or import through it.
+                            #   get put in this file, or imported through it.
                             #   One goal of the project is to make any kind of
-                            #   bot by implementing on or more handlers, and
-                            #   and no have the modify anything else.                                
-quote-db-init.py            #This is just script to create a simple Quotes
+                            #   bot by implementing one or more handlers, and
+                            #   and nor have the modify anything else
+quote-db-init.py            #This is just a script to create a simple Quotes
                             #   db with generic test quotes. Run it if you get
                             #   complaints about missing tables. This is a Bug
                             #   and on the TODO list below.

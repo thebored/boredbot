@@ -19,8 +19,8 @@ class BotNet:
     botnet.bots is a list of all the bots you, and each bot has a ref list of
     all its handlers, everythings can converse with everything else directly.
     """
-    def __init__(self, bot_confs):
-        testy = {'master':'master', 'debugging?':True, 'debugging_level':5, 'testing?':True, 'nick':'botler', 'user':'The botler did it', 'server':'localhost', 'port':6667, 'delay?':True, 'testing_channels':['#boring'], 'testing_server':'localhost', 'testing_port':6667, 'channels':['#gamahcode'], 'server':'irc.geekshed.net', 'port':6667}
+    def __init__(self):
+        testy = {'master':'thebored', 'debugging?':True, 'debugging_level':5, 'testing?':True, 'nick':'botler', 'user':'The botler did it', 'server':'localhost', 'port':6667, 'delay?':True, 'testing_channels':['#boring'], 'testing_server':'localhost', 'testing_port':6667, 'channels':['#gamahcode'], 'server':'irc.geekshed.net', 'port':6667}
         self.bot_confs = [testy] #list of dicts containing the configuration of each bot
         self.bots = []  #list of bot in the net. the central trunk of the data tree
         #debugging statements go to console not irc
@@ -53,13 +53,29 @@ class BotNet:
 
     def start(self):
         self.running = True
+        self.debug("Starting the botnet....", 0)
         while self.running:
-            for bot in self.bots:
-                if bot.running:
-                    text_data = bot.receive_text()
-                    bot.handle_message(text_data)                
+            if self.are_bots_running():
+                for bot in self.bots:
+                    if bot.running:
+                        text_data = bot.receive_text()
+                        bot.handle_message(text_data)
+            else:
+                self.debug("No more bots running...stopping...", 0)
+                self.stop()
+
+    def are_bots_running(self):
+        for bot in self.bots:
+            if bot.running:
+                self.debug("Bot: %s is still running...", 10)
+                return True
+            else:
+                self.debug("Bot: %s is not running...", 10)
+        self.debug("NO BOTS AR RUNNING...", 10)
+        return False
 
     def stop(self):
+        self.debug('SHUTTING DOWN THE NET', 0)
         self.running = False
 
 class BoredBot:
