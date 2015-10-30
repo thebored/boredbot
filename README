@@ -10,7 +10,7 @@ ircbot.py                   #The BotNet, and BoredBot classes. Plus "main".
                             #   get put in this file, or imported through it.
                             #   One goal of the project is to make any kind of
                             #   bot by implementing one or more handlers, and
-                            #   and nor have the modify anything else
+                            #   and not have to modify anything else
 quote-db-init.py            #This is just a script to create a simple Quotes
                             #   db with generic test quotes. Run it if you get
                             #   complaints about missing tables. This is a Bug
@@ -49,6 +49,11 @@ To configure the BotNet, modify the bot_confs dictionary in the BotNet class
     and the bot_configs.conf(or w/e) file. 
 
 TO DO:
+Create/refactor to a IRCHandler derived DBHandler class for deriving db aware
+    classes. like quotes, musicsuggester, odd link stumbler, etc
+MusicHandler:
+    add to, and make random choices from a DB of youtube.com(or w/e) links to
+    songs
 Clean up QuoteHandler(inits table IF NOT EXISTS ), and add in commands for 
     adding quotes.
 Add a config file loader to BotNet so the config doesn't need to be set in the

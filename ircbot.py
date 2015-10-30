@@ -26,8 +26,17 @@ class BotNet:
         #debugging statements go to console not irc
         self.debugging = True   #whether the botnet is being debugged.
                                 #note: each bot is debugged seperately, from the botnet
-        """Ok. This is a little artbitrary, but I assign a value 0-10 for how
-        important of a step is being documented. So here are the general levels
+        """
+        Ok. This is a little artbitrary, but I assign a value 0-5 for how
+        important of a step is being documented.
+        So here are the general levels:
+        0: Change in state of the BotNet, or the BoredBots
+        1: Things being sent by the BotNet or BoredBots
+        2. Things received by the bots.
+        3. Handlers that are activated.
+        4. Things handlers do to carry out their actions(i.e. query a db)
+        5. Descriptions of things being figured out about whats going on.
+            (i.e. is it a private message?, who sent the msg?)
         """
         self.debugging_level = 10
         self.testing = True     #what configuration should be used
@@ -67,11 +76,11 @@ class BotNet:
     def are_bots_running(self):
         for bot in self.bots:
             if bot.running:
-                self.debug("Bot: %s is still running...", 10)
+                self.debug("Bot: %s is still running..." % bot.nick, 10)
                 return True
             else:
-                self.debug("Bot: %s is not running...", 10)
-        self.debug("NO BOTS AR RUNNING...", 10)
+                self.debug("Bot: %s is not running..." % bot.nick, 10)
+        self.debug("NO BOTS ARE RUNNING...", 10)
         return False
 
     def stop(self):
@@ -82,27 +91,27 @@ class BoredBot:
     def __init__(self, bot_net, bot_conf):
         self.bot_conf = bot_conf
         self.bot_net = bot_net #ref to the parent botnet
-        self.debugging = self.bot_conf['debugging?']  #True #tell me when you do stuff
+        self.debugging = self.bot_conf['debugging?']  #tell me when you do stuff
         self.debugging_level = self.bot_conf['debugging_level'] #how useless of data?
         self.testing = self.bot_conf['testing?'] #use test server, or production
-        self.delay = self.bot_conf['delay?']    #add on delay(pretend to type)
-        
+        self.delay = self.bot_conf['delay?']     #add on delay(pretend to type)
+
         """Initialize a bot"""
         self.nick = self.bot_conf['nick'] #nick'botler'
-        self.bang_name = '!' + self.nick   #!<botnick> often at beginning of commands
+        self.bang_name = '!' + self.nick  #!<botnick> often at beginning of commands
         self.user = self.bot_conf['user'] #nick'botler'
         self.master = self.bot_conf['master'] #obey me
-        
-        if self.testing:    #are we testing?
-            self.joinup = self.bot_conf['testing_channels'] #['#boring']   #join these channels
-            self.server = self.bot_conf['testing_server']       #server host
-            self.port = self.bot_conf['testing_port']             #server IP
-        else:
-            self.joinup = self.bot_conf['channels'] #['#gamahcode']   #join these channels
-            self.server = self.bot_conf['server']       #server host
-            self.port = self.bot_conf['port']             #server IP      
 
-        """ 
+        if self.testing:    #are we testing?
+            self.joinup = self.bot_conf['testing_channels'] #join these channels
+            self.server = self.bot_conf['testing_server']   #server host
+            self.port = self.bot_conf['testing_port']       #server IP
+        else:
+            self.joinup = self.bot_conf['channels']     #join these channels
+            self.server = self.bot_conf['server']       #server host
+            self.port = self.bot_conf['port']           #server IP
+
+        """
         all received msgs are passed to each self.handlers' .receive_msg()
         all sent msgs are passed to each self.sentHandlers' .sentmsg()
         """
@@ -111,17 +120,17 @@ class BoredBot:
         self.sent_handlers = [log]
 
         self.db = lite.connect('irc.db')    #use this for storing shit in
-        
+
         """Connect to an IRC server, set nick/user, join chans, start run"""
         self.irc = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
         self.irc.connect( ( self.server, self.port ) )
         self.debug("connected...", 1)   #lets assume it all worked :D
-        self.text_send('NICK ' + self.nick )      #set nick
-        self.text_send('USER ' + self.user) #set user string
+        self.text_send('NICK ' + self.nick )    #set nick
+        self.text_send('USER ' + self.user)     #set user string
         self.motd = self.receive_text()
-        self.debug (self.motd)    #print the motd
+        self.debug (self.motd)                  #print the motd
         time.sleep(3)        #give enough time to connect before continuing
-        self.join_chans(self.joinup)              #join all the chans
+        self.join_chans(self.joinup)            #join all the chans
 
     def debug(self, message, level=5):
         """If debugging is on, and the debug level is high enough print the message"""
@@ -135,25 +144,28 @@ class BoredBot:
 
     def delay_text(self, message):
         """Delay a realistic amount based on amount of text being sent"""
-        if self.delay:                           #if delaying, sleep
-            realistic_delay = len(message) * .03  #use length of message
+        if self.delay:                              #if delaying, sleep
+            realistic_delay = len(message) * .03    #use length of message
             self.debug('Giving realistic delay of ' + str(realistic_delay) + 's', 3)
-            time.sleep(realistic_delay)
+            time.sleep(realistic_delay)             #sleep it out it
         return message
 
     def text_send(self, text_data):
-        """Take a string, do any typing delay, encode to bytes, and send"""
-        self.irc.send((self.delay_text(text_data) + '\r\n').encode())  #always end line with \r\n
+        """
+        Take a string, do any typing delay, encode to bytes, and send
+        Also make sure it always ends in '\r\n'
+        Then pass it to the sent_msg() of all the handlers.
+        """
+        self.irc.send((self.delay_text(text_data) + '\r\n').encode())
         self.debug("\n\ttextSent:\t'%s'" % (text_data), 1)
-        for handler in self.sent_handlers:    #pass sent msg to handlers that care
-            handler.sent_msg(text_data)
+        for handler in self.sent_handlers:
+            handler.sent_msg(text_data)     #pass sent msg to handlers that care
 
     def receive_text(self):
         """Get 4096bytes from socket buffer, and return it decoded to string"""
-        text_data = self.irc.recv(4096).decode()  #get 4k, decode bytes to string
+        text_data = self.irc.recv(4096).decode()
         self.debug('\ntext decoded: ' + text_data, 2)
         return text_data
-
 
     def join_chans(self, chan_list):
         """Join a passed list of one or more chans"""
@@ -163,7 +175,7 @@ class BoredBot:
     def start(self):
         """Begin self.running loop. Get text, pass to the message handlers."""
         self.debug("starting bot(turning on self.running)!", 0)
-        self.running = True  #Don't stop until self.stop()
+        self.running = True     #Don't stop until self.stop()
 
     def stop(self):
         """Stop Cleanly: Quit server and stop self.running loop"""
@@ -177,5 +189,5 @@ class BoredBot:
             handler.receive_msg(text_data)
         time.sleep(0.2) #chill for a bit. no need to loop the cpu to death
 
-botnet = BotNet()    #Create an instance of BoredBot
-botnet.start()                     #Start the Botnet
+botnet = BotNet()   #Create an instance of BoredBot
+botnet.start()      #Start the Botnet
