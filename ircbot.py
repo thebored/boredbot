@@ -56,8 +56,8 @@ class BotNet:
         while self.running:
             for bot in self.bots:
                 if bot.running:
-                    textData = bot.receiveText()
-                    bot.handleMessage(textData)                
+                    text_data = bot.receive_text()
+                    bot.handle_message(text_data)                
 
     def stop(self):
         self.running = False
@@ -73,7 +73,7 @@ class BoredBot:
         
         """Initialize a bot"""
         self.nick = self.bot_conf['nick'] #nick'botler'
-        self.bangName = '!' + self.nick   #!<botnick> often at beginning of commands
+        self.bang_name = '!' + self.nick   #!<botnick> often at beginning of commands
         self.user = self.bot_conf['user'] #nick'botler'
         self.master = self.bot_conf['master'] #obey me
         
@@ -87,12 +87,12 @@ class BoredBot:
             self.port = self.bot_conf['port']             #server IP      
 
         """ 
-        all received msgs are passed to each self.handlers' .receivemsg()
+        all received msgs are passed to each self.handlers' .receive_msg()
         all sent msgs are passed to each self.sentHandlers' .sentmsg()
         """
         log = LogHandler(self)  #just use the same log handler in both places
         self.handlers = [PONGHandler(self), OneLinerHandler(self), QuoteHandler(self), log, QuitHandler(self), JoinHandler(self), SysHandler(self)]
-        self.sentHandlers = [log]
+        self.sent_handlers = [log]
 
         self.db = lite.connect('irc.db')    #use this for storing shit in
         
@@ -100,12 +100,12 @@ class BoredBot:
         self.irc = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
         self.irc.connect( ( self.server, self.port ) )
         self.debug("connected...", 1)   #lets assume it all worked :D
-        self.textSend('NICK ' + self.nick )      #set nick
-        self.textSend('USER ' + self.user) #set user string
-        self.motd = self.receiveText()
+        self.text_send('NICK ' + self.nick )      #set nick
+        self.text_send('USER ' + self.user) #set user string
+        self.motd = self.receive_text()
         self.debug (self.motd)    #print the motd
         time.sleep(3)        #give enough time to connect before continuing
-        self.joinChans(self.joinup)              #join all the chans
+        self.join_chans(self.joinup)              #join all the chans
 
     def debug(self, message, level=5):
         """If debugging is on, and the debug level is high enough print the message"""
@@ -117,32 +117,32 @@ class BoredBot:
         """Do any error msgs"""
         print ('\t\t' + message.upper())
 
-    def delayText(self, message):
+    def delay_text(self, message):
         """Delay a realistic amount based on amount of text being sent"""
         if self.delay:                           #if delaying, sleep
-            realisticDelay = len(message) * .03  #use length of message
-            self.debug('Giving realistic delay of ' + str(realisticDelay) + 's', 3)
-            time.sleep(realisticDelay)
+            realistic_delay = len(message) * .03  #use length of message
+            self.debug('Giving realistic delay of ' + str(realistic_delay) + 's', 3)
+            time.sleep(realistic_delay)
         return message
 
-    def textSend(self, textData):
+    def text_send(self, text_data):
         """Take a string, do any typing delay, encode to bytes, and send"""
-        self.irc.send((self.delayText(textData) + '\r\n').encode())  #always end line with \r\n
-        self.debug("\n\ttextSent:\t'%s'" % (textData), 1)
-        for handler in self.sentHandlers:    #pass sent msg to handlers that care
-            handler.sentmsg(textData)
+        self.irc.send((self.delay_text(text_data) + '\r\n').encode())  #always end line with \r\n
+        self.debug("\n\ttextSent:\t'%s'" % (text_data), 1)
+        for handler in self.sent_handlers:    #pass sent msg to handlers that care
+            handler.sent_msg(text_data)
 
-    def receiveText(self):
+    def receive_text(self):
         """Get 4096bytes from socket buffer, and return it decoded to string"""
-        textData = self.irc.recv(4096).decode()  #get 4k, decode bytes to string
-        self.debug('\ntextDecoded: ' + textData, 2)
-        return textData
+        text_data = self.irc.recv(4096).decode()  #get 4k, decode bytes to string
+        self.debug('\ntext decoded: ' + text_data, 2)
+        return text_data
 
 
-    def joinChans(self, chanlist):
+    def join_chans(self, chan_list):
         """Join a passed list of one or more chans"""
-        for chan in chanlist:
-            self.textSend ('JOIN ' + chan)
+        for chan in chan_list:
+            self.text_send ('JOIN ' + chan)
 
     def start(self):
         """Begin self.running loop. Get text, pass to the message handlers."""
@@ -152,13 +152,13 @@ class BoredBot:
     def stop(self):
         """Stop Cleanly: Quit server and stop self.running loop"""
         self.debug('Stopping the bot: nick:%s\tserver:%s\t' % (self.nick, self.server), 0)
-        self.textSend('QUIT')
+        self.text_send('QUIT')
         self.running = False
 
-    def handleMessage(self, textData):
+    def handle_message(self, text_data):
         """Take a msg string, handle any commands, PONG server etc."""
         for handler in self.handlers:
-            handler.receivemsg(textData)
+            handler.receive_msg(text_data)
         time.sleep(0.2) #chill for a bit. no need to loop the cpu to death
 
 botnet = BotNet()    #Create an instance of BoredBot

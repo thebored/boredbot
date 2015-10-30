@@ -8,11 +8,11 @@ Created on Thu Oct 29 07:00:09 2015
 
 class IRCHandler(object):
     """
-    Handlers that respond to others use receivemsg. Handlers that watch what is
-    being sent use sentmsg to watch what the bot is sending(think log handler)
+    Handlers that respond to others use receive_msg. Handlers that watch what is
+    being sent use sent_msg to watch what the bot is sending(think log handler)
     The base handler has some methods that come in handy when working with msgs
-    Just implement the receivemsg to handle received msg, 
-    and sentmsg to watch what the bot itself is doing(including the other handlers)
+    Just implement the receive_msg to handle received msg, 
+    and sent_msg to watch what the bot itself is doing(including the other handlers)
     Also note self.bot is a ref to the bot. this lets it be controlled from inside
     the handlers. Also, with self.bot.handlers, the other handlers can be used 
     """
@@ -22,52 +22,52 @@ class IRCHandler(object):
     def description(self):
         return "No Desciption"
 
-    def receivemsg(self, msg):
+    def receive_msg(self, msg):
         return None
         
-    def sentmsg(self, sentmsg):
+    def sent_msg(self, sent_msg):
         return None
         
-    def privmsg(self, destination, msg):
+    def priv_msg(self, destination, msg):
         """Takes destination nick/chan and message, forms and sends privmsg"""
-        self.bot.textSend('PRIVMSG ' + destination +  ' :' + msg)    #dont forget :
+        self.bot.text_send('PRIVMSG ' + destination +  ' :' + msg)    #dont forget :
 
-    def replyto(self, msg, reply):
+    def reply_to(self, msg, reply):
          """Takes a privmsg and reply, and sends reply to appropriate chan/pm"""
-         if self.isPrivMsg(msg): #make sure its a privmsg!
-             self.privmsg(self.chanFrom(msg), reply)  #send msg to sender chan/pm
+         if self.is_priv_msg(msg): #make sure its a privmsg!
+             self.priv_msg(self.chan_from(msg), reply)  #send msg to sender chan/pm
 
-    def isPrivMsg(self, msg):   #note:PRIVMSG are not just pms, it includes chans
-        splitMsg = msg.split()
-        if len(splitMsg) < 2:
+    def is_priv_msg(self, msg):   #note:PRIVMSG are not just pms, it includes chans
+        split_msg = msg.split()
+        if len(split_msg) < 2:
             return False
-        if splitMsg[1].find('PRIVMSG') != -1:
+        if split_msg[1].find('PRIVMSG') != -1:
             return True
         else:
             return False 
             
-    def chanFrom(self, msg):  
+    def chan_from(self, msg):  
         """if a privmsg, get the channel(or nick if a pm) it's from
         :thebored!~thebored@localhost.lake PRIVMSG #boring :chan msg
         :thebored!~thebored@localhost.lake PRIVMSG botler :pm message
         Notice, the chan can be extracted from msg[2] for a chan msg. but for
         pms it needs to be parsed from msg[0]"""
-        if self.isPrivMsg(msg):
-            if self.isPrivate(msg): #if private/pm, send directly to sender
+        if self.is_priv_msg(msg):
+            if self.is_private(msg): #if private/pm, send directly to sender
                 return 'thebored' #FUCKIN CHANGE TIS BIG EROOR
             else:   #if its in a chan, use the place the messag was sent
                 return msg.split()[2]
         else:
             return None     #if not a chan/priv msg its a server
             
-    def isPrivate(self, msg):
+    def is_private(self, msg):
         if (msg.split()[2] == self.bot.nick):
             return True
         else:
             return False
             
-    def senderOf(self, msg):    #if privmsg, get the sender info
-        if self.isPrivMsg(msg):
+    def sender_of(self, msg):    #if privmsg, get the sender info
+        if self.is_priv_msg(msg):
             self.bot.debug("\t\t\tThis was a PRIVMSG FROM %s" %  msg.split()[0], 5)
             return msg.split()[0] #like :thebored!~thebored@localhost.lake
         else:
@@ -78,12 +78,12 @@ class IRCHandler(object):
         ##like :thebored!~thebored@localhost.lake -> thebored
         return nick_host.split('!~')[0].lstrip(':')
         
-    def isCommandFromGod(self, msg):
+    def is_authenticated(self, msg):
         """Takes a msg, returns True if it is from self.bot.master"""
         #if the first word has 1 occurance of <nick>!~
         #like :thebored!~thebored@localhost.lake(some reason :<nick>!~ is broken)
-        if self.isPrivMsg(msg):
-            if (self.senderOf(msg).find(self.bot.master + '!~') != -1):
+        if self.is_priv_msg(msg):
+            if (self.sender_of(msg).find(self.bot.master + '!~') != -1):
                 #self.debug('Received message from ' + self.bot.master + ' the god.')
                 return True
             else:
@@ -94,33 +94,34 @@ class IRCHandler(object):
 
 class PONGHandler(IRCHandler):
     """PONG: PONG back the servers PING to stay connected"""
-    def receivemsg(self, msg):
+    def receive_msg(self, msg):
         if msg.split()[0].find('PING') != -1:   #if first word is PING
             self.bot.textSend ('PONG ' + msg.split() [1])   #PONG back
 
 class OneLinerHandler(IRCHandler):
     """OneLiner: A collection of one line responses to prompts/commands"""
-    def receivemsg(self, msg):
-        if self.isPrivMsg(msg):
+    def receive_msg(self, msg):
+        if self.is_priv_msg(msg):
             if msg.find('hi ' + self.bot.nick) != -1:
-                self.replyto(msg, 'hi there. go fuck yourself.')
+                self.reply_to(msg, 'hi there. go fuck yourself.')
             if msg.find('!cheeseit') != -1: #chumps
-                self.replyto(msg,'Time to catch the next pimpmobile')
+                self.reply_to(msg,'Time to catch the next pimpmobile')
             if msg.find('!dildos') != -1: #why not?
-                self.replyto(msg,'B==D ' + msg.split()[4])
+                self.reply_to(msg,'B==D ' + msg.split()[4])
 
 class QuoteHandler(IRCHandler):
     """quote: Send random line from a Quotes table in the  bot's .db"""
-    def receivemsg(self, msg):
+
+    def receive_msg(self, msg):
         if msg.find('!quote') != -1:
             with self.bot.db:    
                 cur = self.bot.db.cursor()
                 cur.execute("SELECT * FROM Quotes ORDER BY RANDOM() LIMIT 1")
                 row = cur.fetchone() #fetch the row 
                 self.bot.debug('Fetched Random Quote: ' + str(row), 3)
-                self.replyto(msg, ('"%s"' % row[1]))    #send the quote
+                self.reply_to(msg, ('"%s"' % row[1]))    #send the quote
 
-    def addQuote(self, quote, added_by):
+    def add_quote(self, quote, added_by):
         with self.bot.db:
             cur = self.bot.db.cursor()
             cur.execute("CREATE TABLE IF NOT EXISTS Quotes(Id INTEGER PRIMARY KEY, Quote TEXT, Added_by TEXT)")
@@ -129,32 +130,32 @@ class QuoteHandler(IRCHandler):
 
 class QuitHandler(IRCHandler):
     """quit: Makes the bot quit the server on with '!<botname> quit' command"""
-    def receivemsg(self, msg):
-        if self.isCommandFromGod(msg):
-            if msg.find(self.bot.bangName + ' quit') != -1:
-                self.replyto(msg, "Screw you guys, I'm going home.")
+    def receive_msg(self, msg):
+        if self.is_authenticated(msg):
+            if msg.find(self.bot.bang_name + ' quit') != -1:
+                self.reply_to(msg, "Screw you guys, I'm going home.")
                 self.bot.stop()
 
 class JoinHandler(IRCHandler):
     """join: Make the bot rejoin its self.joinup list of chans with !rejoin"""
-    def receivemsg(self, msg):
-        if self.isCommandFromGod(msg):
+    def receive_msg(self, msg):
+        if self.is_authenticated(msg):
             if msg.find('!rejoin') != -1:
-                self.bot.joinChans(self.bot.joinup)
+                self.bot.join_chans(self.bot.join_up)
             if msg.find('!join') != -1:
-                self.bot.joinChans([msg.split()[3]])
+                self.bot.join_chans([msg.split()[3]])
 
 class LogHandler(IRCHandler):
     """logger: log all msgs to an sqllite file db"""
-    def receivemsg(self, msg):
+    def receive_msg(self, msg):
         self.log(msg)
-    def sentmsg(self, msg):
+    def sent_msg(self, msg):
         self.log(msg)
     def log(self, msg):
         self.bot.debug("\tSQL:\t'%s'" % (msg), 8)
         with self.bot.db:
             cur = self.bot.db.cursor()
-            chan = self.chanFrom(msg)
+            chan = self.chan_from(msg)
             cur.execute("CREATE TABLE IF NOT EXISTS IRCLog (Id INTEGER PRIMARY KEY, Msg TEXT, Chan TEXT)")
             cur.execute("INSERT INTO IRCLog (Msg, Chan) VALUES (?, ?)", (msg, chan))
             self.bot.debug("Added a msg to the DB Log!: '%s added from %s'" % (msg, chan), 2)
@@ -163,7 +164,7 @@ from datetime import timedelta
 
 class SysHandler(IRCHandler):
     """sys: A collection of Linux sysinfo commands with '!sys <info>'"""
-    def receivemsg(self, msg):
+    def receive_msg(self, msg):
         #stole the uptime code from
         #http://planzero.org/blog/2012/01/26/system_uptime_in_python,_a_better_way
         if msg.find('!sys uptime') != -1:    #reply with linux system uptime  
@@ -176,7 +177,7 @@ class SysHandler(IRCHandler):
                 with uptime as f:
                     uptime_seconds = float(f.readline().split()[0])
                     uptime_string = str(timedelta(seconds = uptime_seconds))
-                    self.replyto(msg, uptime_string) #reply uptime to sender
+                    self.reply_to(msg, uptime_string) #reply uptime to sender
         if msg.find('!sys os') != -1:    #Reply with os version
             self.bot.debug('\tReceived !sys os command', 3)
             try:
@@ -186,7 +187,7 @@ class SysHandler(IRCHandler):
             else:
                 with os_version as f:
                     os_info = str(f.readline())
-                    self.replyto(msg, os_info)
+                    self.reply_to(msg, os_info)
         if msg.find('!sys meminfo') != -1:   #Reply with meminfo
             self.bot.debug('\tReceived !sys meminfo command', 3)
             try:
@@ -198,7 +199,7 @@ class SysHandler(IRCHandler):
                     for line in f.readlines():
                         line = str(line)
                         if line.find('Mem') != -1:
-                            self.replyto(msg, line)
+                            self.reply_to(msg, line)
         if msg.find('!sys cpuinfo') != -1:   #Reply with cpuinfo
             self.bot.debug('\tReceived !sys cpuinfo command', 3)
             try:
@@ -210,5 +211,5 @@ class SysHandler(IRCHandler):
                     for line in f.readlines():
                         line = str(line)
                         if line.find('model name') != -1:
-                            self.replyto(msg, line.split(':', 1)[1])
+                            self.reply_to(msg, line.split(':', 1)[1])
                             break    #Get out of the for loop. Dont print >once
