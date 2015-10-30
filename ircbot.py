@@ -19,7 +19,7 @@ class BotNet:
     botnet.bots is a list of all the bots you, and each bot has a ref list of
     all its handlers, everythings can converse with everything else directly.
     """
-    def __init__(self):
+    def __init__(self, bot_confs):
         testy = {'master':'master', 'debugging?':True, 'debugging_level':5, 'testing?':True, 'nick':'botler', 'user':'The botler did it', 'server':'localhost', 'port':6667, 'delay?':True, 'testing_channels':['#boring'], 'testing_server':'localhost', 'testing_port':6667, 'channels':['#gamahcode'], 'server':'irc.geekshed.net', 'port':6667}
         self.bot_confs = [testy] #list of dicts containing the configuration of each bot
         self.bots = []  #list of bot in the net. the central trunk of the data tree
@@ -163,10 +163,3 @@ class BoredBot:
 
 botnet = BotNet()    #Create an instance of BoredBot
 botnet.start()                     #Start the Botnet
-
-"""TO DO: !help(handler describe), create a IRCProtocolHandler that combines ping/pong, and get RFC stuff
-    PluginSystem: the handlers are each a file in plugin directory. each file in dir is try:ed to imp.ort 
-    To control a botnet, since every bot is running the same code, any bot can query/control the rest.
-    If bots are on seperate machines, a botchannel or PMs should be used to communicate
-    Plugins: data miner, markov chain, dcc dir bot 
-"""

@@ -1,1 +1,64 @@
 This is the readme. Readme. or dont.
+BoredBot is a botnet project. Run anywhere from a single server/nick bot on a
+    single #chan, to 100 bots, each on 100 channels. Though it has blocking
+    code, so it's best to use it as an easily understand bot framework for a
+    hobby IRC Bot or to learn how to make your own.
+
+Here is the basic structure of the code.
+ircbot.py                   #The BotNet, and BoredBot classes. Plus "main".
+    imports IRCHandlers     #IRCHandler, and all derived classes. New Handlers
+                            #   get put in this file, or import through it.
+                            #   One goal of the project is to make any kind of
+                            #   bot by implementing on or more handlers, and
+                            #   and no have the modify anything else.                                
+quote-db-init.py            #This is just script to create a simple Quotes
+                            #   db with generic test quotes. Run it if you get
+                            #   complaints about missing tables. This is a Bug
+                            #   and on the TODO list below.
+Simply run ircbot.py to start the botnet.
+
+To control a botnet, since every bot is running the same code, any bot can 
+    query/control the rest. And since every message can be passed through a
+    handler, and every handler can access every other handler through each
+    BoredBot's self.handlers list. And all the other bots can be reached
+    using each BoredBot's self.bot_net reference, by using the BotNet's
+    self.bots list.
+Here is the basic structure of the data.
+BotNet  #Instantiate one of these, and give it the correct bot_confs in
+        #   it's __init__. It will Instantiate a BoredBot, start it, and add
+        #   a ref to it in the BotNet.bots[] list
+    BotNet.bots[]   #Each bot in this list has its .receive_text() called
+                    #   and the text_data returned is passed to the bot's 
+                    #   .handle_message() called
+                    
+        BoredBot    #A bot within the botnet. One BoredBot per nick, per server
+            BoredBot.handlers[]     #Each handler derived from IRCHandler in
+                                    #   this list has its .receive_msg() called
+                                    #   with each message passed to the
+                                    #   BoredBot's .hand_message() 
+                IRCHandler(or derived classes)  #Hopefully, any type of task
+                                                #   or mod can be implemented
+                                                #   using a IRCHandler derived
+                                                #   class, and the ref tree up
+
+To configure the BotNet, modify the bot_confs dictionary in the BotNet class
+    definition in the __init__(). In the future, a seperate BotNet.load_conf()
+    is needed to load the confs from a seperate file, so the ircbot.py file
+    won't have to be touched to configure, or build a custom bot. Only a new
+    IRCHandler derived class in a file in a special plugin dir(SEE BELOW TODO),
+    and the bot_configs.conf(or w/e) file. 
+
+TO DO:
+Clean up QuoteHandler(inits table IF NOT EXISTS ), and add in commands for 
+    adding quotes.
+Add a config file loader to BotNet so the config doesn't need to be set in the
+    ircbot.py file.
+After the de-camelCasing, do another pass on the comments.
+!help(handler describe)
+create a IRCProtocolHandler that combines ping/pong, and get RFC stuff
+PluginSystem: the handlers are each a file in plugin directory. each file in dir is try:ed to imp.ort 
+Plugins: data miner, markov chain, dcc dir bot 
+    If bots are on seperate machines, a botchannel or PMs should be used to
+    communicate. This requires the necessary multi-bot handlers.
+
+"""
